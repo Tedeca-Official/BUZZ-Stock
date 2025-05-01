@@ -18,18 +18,15 @@ interface AuthContextType {
   logout: () => void;
   isAuthenticated: boolean;
   isAdmin: boolean;
+  userDatabase: { email: string, password: string, name: string, id: string, role: UserRole }[];
+  updateUserDatabase: (newUsers: { email: string, password: string, name: string, id: string, role: UserRole }[]) => void;
 }
 
-const AuthContext = createContext<AuthContextType>({
-  user: null,
-  login: () => Promise.resolve(false),
-  logout: () => {},
-  isAuthenticated: false,
-  isAdmin: false,
-});
+// Local storage key for user database
+const USER_DB_KEY = "stocksavvy_users";
 
-// Mock user data - in a real app, this would come from your backend
-const MOCK_USERS = [
+// Default mock users
+const DEFAULT_USERS = [
   {
     id: "1",
     name: "Admin User",
@@ -46,10 +43,34 @@ const MOCK_USERS = [
   },
 ];
 
+const AuthContext = createContext<AuthContextType>({
+  user: null,
+  login: () => Promise.resolve(false),
+  logout: () => {},
+  isAuthenticated: false,
+  isAdmin: false,
+  userDatabase: DEFAULT_USERS,
+  updateUserDatabase: () => {},
+});
+
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
   const [user, setUser] = useState<User | null>(null);
+  const [userDatabase, setUserDatabase] = useState(() => {
+    try {
+      const savedUsers = localStorage.getItem(USER_DB_KEY);
+      return savedUsers ? JSON.parse(savedUsers) : DEFAULT_USERS;
+    } catch (error) {
+      console.error("Failed to load user database:", error);
+      return DEFAULT_USERS;
+    }
+  });
+
+  // Save user database to localStorage when it changes
+  useEffect(() => {
+    localStorage.setItem(USER_DB_KEY, JSON.stringify(userDatabase));
+  }, [userDatabase]);
 
   // Check for existing session on load
   useEffect(() => {
@@ -64,12 +85,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   }, []);
 
+  // Function to update user database
+  const updateUserDatabase = (newUsers: typeof DEFAULT_USERS) => {
+    setUserDatabase(newUsers);
+  };
+
   // Login function
   const login = async (email: string, password: string): Promise<boolean> => {
     // Simulate API call with timeout
     return new Promise((resolve) => {
       setTimeout(() => {
-        const foundUser = MOCK_USERS.find(
+        const foundUser = userDatabase.find(
           (u) => u.email === email && u.password === password
         );
         
@@ -99,6 +125,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         logout,
         isAuthenticated: !!user,
         isAdmin: user?.role === "admin",
+        userDatabase,
+        updateUserDatabase,
       }}
     >
       {children}

@@ -63,8 +63,8 @@ const Inventory = () => {
             </div>
             <div className="mt-2 sm:mt-0 sm:ml-4 w-full sm:w-40">
               <Select 
-                value={selectedCategory || ""} 
-                onValueChange={(value) => setSelectedCategory(value || null)}
+                value={selectedCategory || "all-categories"} 
+                onValueChange={(value) => setSelectedCategory(value === "all-categories" ? null : value)}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="All Categories" />
