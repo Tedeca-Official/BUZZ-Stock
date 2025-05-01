@@ -13,7 +13,7 @@ export interface Product {
   saleQuantity?: number;
 }
 
-interface ProductHistory {
+export interface ProductHistory {
   id: string;
   productId: string;
   date: string;
