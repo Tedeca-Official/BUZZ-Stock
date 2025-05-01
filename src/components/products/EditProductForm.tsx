@@ -35,7 +35,7 @@ const EditProductForm: React.FC<EditProductFormProps> = ({
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     // Validation
@@ -51,7 +51,7 @@ const EditProductForm: React.FC<EditProductFormProps> = ({
     setIsSubmitting(true);
 
     try {
-      updateProduct(product.id, {
+      await updateProduct(product.id, {
         productId,
         name,
         category,
@@ -97,6 +97,7 @@ const EditProductForm: React.FC<EditProductFormProps> = ({
             onChange={(e) => setProductId(e.target.value)}
             placeholder="e.g. iph13"
             required
+            className="rounded-lg"
           />
         </div>
 
@@ -108,6 +109,7 @@ const EditProductForm: React.FC<EditProductFormProps> = ({
             onChange={(e) => setName(e.target.value)}
             placeholder="e.g. iPhone 13 Pro"
             required
+            className="rounded-lg"
           />
         </div>
       </div>
@@ -116,10 +118,10 @@ const EditProductForm: React.FC<EditProductFormProps> = ({
         <div className="space-y-2">
           <Label htmlFor="category">Category *</Label>
           <Select value={category} onValueChange={setCategory} required>
-            <SelectTrigger>
+            <SelectTrigger className="rounded-lg">
               <SelectValue placeholder="Select category" />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="rounded-lg">
               {categories.map((cat) => (
                 <SelectItem key={cat} value={cat}>
                   {cat}
@@ -138,6 +140,7 @@ const EditProductForm: React.FC<EditProductFormProps> = ({
             onChange={(e) => setPurchaseDate(e.target.value)}
             max={new Date().toISOString().split("T")[0]}
             required
+            className="rounded-lg"
           />
         </div>
       </div>
@@ -152,6 +155,7 @@ const EditProductForm: React.FC<EditProductFormProps> = ({
             onChange={(e) => setStock(e.target.value)}
             min="0"
             required
+            className="rounded-lg"
           />
         </div>
 
@@ -165,6 +169,7 @@ const EditProductForm: React.FC<EditProductFormProps> = ({
             placeholder="0.00"
             min="0"
             step="0.01"
+            className="rounded-lg"
           />
         </div>
       </div>
@@ -175,10 +180,15 @@ const EditProductForm: React.FC<EditProductFormProps> = ({
           variant="outline"
           onClick={onComplete}
           disabled={isSubmitting}
+          className="rounded-full"
         >
           Cancel
         </Button>
-        <Button type="submit" disabled={isSubmitting} className="bg-savvy-primary">
+        <Button 
+          type="submit" 
+          disabled={isSubmitting} 
+          className="bg-savvy-primary rounded-full"
+        >
           {isSubmitting ? "Saving Changes..." : "Save Changes"}
         </Button>
       </div>

@@ -27,7 +27,7 @@ import {
 import AddProductForm from "@/components/products/AddProductForm";
 
 const Products = () => {
-  const { products } = useProducts();
+  const { products, isLoading } = useProducts();
   const { isAdmin } = useAuth();
   const navigate = useNavigate();
   
@@ -67,7 +67,7 @@ const Products = () => {
           {isAdmin && (
             <Button 
               onClick={() => setIsAddProductOpen(true)} 
-              className="bg-blue-500 hover:bg-blue-600 text-white rounded-md shadow-sm"
+              className="bg-blue-500 hover:bg-blue-600 text-white rounded-full shadow-sm"
             >
               <Plus className="mr-2 h-4 w-4" /> Add Product
             </Button>
@@ -75,7 +75,7 @@ const Products = () => {
         </div>
       </div>
 
-      <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100 mb-6">
+      <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 mb-6">
         <div className="flex flex-col md:flex-row justify-between gap-4 mb-4">
           <div className="relative flex-1">
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
@@ -83,19 +83,19 @@ const Products = () => {
               placeholder="Search products..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-8 border-gray-200 rounded-md"
+              className="pl-8 border-gray-200 rounded-lg"
             />
           </div>
 
           <div className="flex space-x-2">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" className="flex items-center border-gray-200 text-gray-700">
+                <Button variant="outline" className="flex items-center border-gray-200 text-gray-700 rounded-lg">
                   <Filter className="mr-2 h-4 w-4" />
                   Status
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="bg-white border border-gray-100 shadow-md rounded-md">
+              <DropdownMenuContent align="end" className="bg-white border border-gray-100 shadow-md rounded-lg">
                 <DropdownMenuItem onClick={() => setStatusFilter(null)}>
                   All
                 </DropdownMenuItem>
@@ -110,12 +110,12 @@ const Products = () => {
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" className="flex items-center border-gray-200 text-gray-700">
+                <Button variant="outline" className="flex items-center border-gray-200 text-gray-700 rounded-lg">
                   <Filter className="mr-2 h-4 w-4" />
                   Category
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="bg-white border border-gray-100 shadow-md rounded-md">
+              <DropdownMenuContent align="end" className="bg-white border border-gray-100 shadow-md rounded-lg">
                 <DropdownMenuItem onClick={() => setCategoryFilter(null)}>
                   All Categories
                 </DropdownMenuItem>
@@ -134,48 +134,55 @@ const Products = () => {
         </div>
 
         <div className="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow className="bg-gray-50">
-                <TableHead className="text-gray-600 font-medium">ID</TableHead>
-                <TableHead className="text-gray-600 font-medium">Name</TableHead>
-                <TableHead className="text-gray-600 font-medium">Category</TableHead>
-                <TableHead className="text-gray-600 font-medium">Status</TableHead>
-                <TableHead className="text-gray-600 font-medium">Stock</TableHead>
-                <TableHead className="text-gray-600 font-medium">Price</TableHead>
-                <TableHead className="text-gray-600 font-medium">Purchase Date</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredProducts.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={7} className="h-24 text-center text-gray-500">
-                    No products found. Add your first product to get started.
-                  </TableCell>
+          {isLoading ? (
+            <div className="text-center py-8">
+              <div className="animate-spin inline-block w-8 h-8 border-4 border-gray-300 border-t-blue-600 rounded-full mb-4"></div>
+              <p className="text-gray-600">Loading products...</p>
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-gray-50 rounded-lg">
+                  <TableHead className="text-gray-600 font-medium rounded-l-lg">ID</TableHead>
+                  <TableHead className="text-gray-600 font-medium">Name</TableHead>
+                  <TableHead className="text-gray-600 font-medium">Category</TableHead>
+                  <TableHead className="text-gray-600 font-medium">Status</TableHead>
+                  <TableHead className="text-gray-600 font-medium">Stock</TableHead>
+                  <TableHead className="text-gray-600 font-medium">Price</TableHead>
+                  <TableHead className="text-gray-600 font-medium rounded-r-lg">Purchase Date</TableHead>
                 </TableRow>
-              ) : (
-                filteredProducts.map((product) => (
-                  <TableRow 
-                    key={product.id} 
-                    onClick={() => handleRowClick(product.id)}
-                    className="cursor-pointer hover:bg-gray-50 transition-colors"
-                  >
-                    <TableCell className="font-medium">{product.productId}</TableCell>
-                    <TableCell>{product.name}</TableCell>
-                    <TableCell>{product.category}</TableCell>
-                    <TableCell>
-                      <ProductStatusBadge status={product.status} stock={product.stock} />
+              </TableHeader>
+              <TableBody>
+                {filteredProducts.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={7} className="h-24 text-center text-gray-500">
+                      No products found. Add your first product to get started.
                     </TableCell>
-                    <TableCell>{product.stock}</TableCell>
-                    <TableCell>
-                      {product.price ? `$${product.price.toFixed(2)}` : "-"}
-                    </TableCell>
-                    <TableCell>{formatDate(product.purchaseDate)}</TableCell>
                   </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
+                ) : (
+                  filteredProducts.map((product) => (
+                    <TableRow 
+                      key={product.id} 
+                      onClick={() => handleRowClick(product.id)}
+                      className="cursor-pointer hover:bg-gray-50 transition-colors"
+                    >
+                      <TableCell className="font-medium">{product.productId}</TableCell>
+                      <TableCell>{product.name}</TableCell>
+                      <TableCell>{product.category}</TableCell>
+                      <TableCell>
+                        <ProductStatusBadge status={product.status} stock={product.stock} />
+                      </TableCell>
+                      <TableCell>{product.stock}</TableCell>
+                      <TableCell>
+                        {product.price ? `$${product.price.toFixed(2)}` : "-"}
+                      </TableCell>
+                      <TableCell>{formatDate(product.purchaseDate)}</TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          )}
         </div>
       </div>
 

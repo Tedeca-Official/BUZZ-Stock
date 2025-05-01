@@ -31,7 +31,7 @@ const AddProductForm: React.FC<AddProductFormProps> = ({ onComplete }) => {
   const [price, setPrice] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     // Validation
@@ -47,7 +47,7 @@ const AddProductForm: React.FC<AddProductFormProps> = ({ onComplete }) => {
     setIsSubmitting(true);
 
     try {
-      addProduct({
+      await addProduct({
         productId,
         name,
         category,
@@ -94,6 +94,7 @@ const AddProductForm: React.FC<AddProductFormProps> = ({ onComplete }) => {
             onChange={(e) => setProductId(e.target.value)}
             placeholder="e.g. iph13"
             required
+            className="rounded-lg"
           />
         </div>
         
@@ -105,6 +106,7 @@ const AddProductForm: React.FC<AddProductFormProps> = ({ onComplete }) => {
             onChange={(e) => setName(e.target.value)}
             placeholder="e.g. iPhone 13 Pro"
             required
+            className="rounded-lg"
           />
         </div>
       </div>
@@ -113,10 +115,10 @@ const AddProductForm: React.FC<AddProductFormProps> = ({ onComplete }) => {
         <div className="space-y-2">
           <Label htmlFor="category">Category *</Label>
           <Select value={category} onValueChange={setCategory} required>
-            <SelectTrigger>
+            <SelectTrigger className="rounded-lg">
               <SelectValue placeholder="Select category" />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="rounded-lg">
               {categories.map((cat) => (
                 <SelectItem key={cat} value={cat}>
                   {cat}
@@ -135,6 +137,7 @@ const AddProductForm: React.FC<AddProductFormProps> = ({ onComplete }) => {
             onChange={(e) => setPurchaseDate(e.target.value)}
             max={new Date().toISOString().split("T")[0]}
             required
+            className="rounded-lg"
           />
         </div>
       </div>
@@ -149,6 +152,7 @@ const AddProductForm: React.FC<AddProductFormProps> = ({ onComplete }) => {
             onChange={(e) => setStock(e.target.value)}
             min="1"
             required
+            className="rounded-lg"
           />
         </div>
         
@@ -162,6 +166,7 @@ const AddProductForm: React.FC<AddProductFormProps> = ({ onComplete }) => {
             placeholder="0.00"
             min="0"
             step="0.01"
+            className="rounded-lg"
           />
         </div>
       </div>
@@ -172,10 +177,15 @@ const AddProductForm: React.FC<AddProductFormProps> = ({ onComplete }) => {
           variant="outline"
           onClick={onComplete}
           disabled={isSubmitting}
+          className="rounded-full"
         >
           Cancel
         </Button>
-        <Button type="submit" disabled={isSubmitting} className="bg-savvy-primary">
+        <Button 
+          type="submit" 
+          disabled={isSubmitting} 
+          className="bg-savvy-primary rounded-full"
+        >
           {isSubmitting ? "Adding Product..." : "Add Product"}
         </Button>
       </div>

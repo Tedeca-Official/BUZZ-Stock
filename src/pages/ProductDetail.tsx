@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useProducts, Product, ProductHistory } from "@/contexts/ProductContext";
 import { useAuth } from "@/contexts/AuthContext";
@@ -21,7 +21,7 @@ import SellProductForm from "@/components/products/SellProductForm";
 const ProductDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { getProductById, getHistoryForProduct } = useProducts();
+  const { getProductById, getHistoryForProduct, isLoading } = useProducts();
   const { isAdmin } = useAuth();
   
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -29,6 +29,17 @@ const ProductDetail = () => {
 
   const product = getProductById(id || "");
   const productHistory = getHistoryForProduct(id || "");
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <div className="animate-spin inline-block w-8 h-8 border-4 border-gray-300 border-t-blue-600 rounded-full mb-4"></div>
+          <p className="text-gray-600">Loading product details...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (!product) {
     return (
@@ -38,7 +49,7 @@ const ProductDetail = () => {
         <Button 
           onClick={() => navigate("/products")}
           variant="outline"
-          className="mt-4"
+          className="mt-4 rounded-full"
         >
           Back to Products
         </Button>
@@ -53,7 +64,7 @@ const ProductDetail = () => {
           <Button 
             variant="ghost" 
             onClick={() => navigate("/products")}
-            className="mr-2"
+            className="mr-2 rounded-full"
           >
             <ArrowLeft className="h-4 w-4" />
           </Button>
@@ -64,7 +75,7 @@ const ProductDetail = () => {
             <Button 
               onClick={() => setIsSellDialogOpen(true)} 
               variant="outline"
-              className="flex items-center"
+              className="flex items-center rounded-full"
             >
               <ShoppingBag className="mr-2 h-4 w-4" />
               Sell Product
@@ -73,7 +84,7 @@ const ProductDetail = () => {
           {isAdmin && (
             <Button 
               onClick={() => setIsEditDialogOpen(true)} 
-              className="bg-savvy-primary"
+              className="bg-savvy-primary rounded-full"
             >
               <Edit className="mr-2 h-4 w-4" />
               Edit Product
@@ -82,6 +93,7 @@ const ProductDetail = () => {
         </div>
       </div>
 
+      {/* Product info cards */}
       <div className="grid gap-6 md:grid-cols-3 mb-6">
         <InfoCard 
           title="Status" 
@@ -99,18 +111,21 @@ const ProductDetail = () => {
         />
       </div>
 
-      <Tabs defaultValue="details">
-        <TabsList className="mb-4">
-          <TabsTrigger value="details">Details</TabsTrigger>
-          <TabsTrigger value="history">History</TabsTrigger>
+      {/* Tabs for product details and history */}
+      <Tabs defaultValue="details" className="mb-6">
+        <TabsList className="mb-4 rounded-full bg-gray-100 p-1">
+          <TabsTrigger value="details" className="rounded-full data-[state=active]:bg-white data-[state=active]:shadow-sm">Details</TabsTrigger>
+          <TabsTrigger value="history" className="rounded-full data-[state=active]:bg-white data-[state=active]:shadow-sm">History</TabsTrigger>
         </TabsList>
+        
+        {/* Details Tab Content */}
         <TabsContent value="details">
-          <Card>
-            <CardHeader>
+          <Card className="border border-gray-100 rounded-xl shadow-sm">
+            <CardHeader className="bg-gray-50 rounded-t-xl">
               <CardTitle>Product Details</CardTitle>
               <CardDescription>Comprehensive information about this product</CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-6">
               <div className="grid gap-4 md:grid-cols-2">
                 <DetailItem label="Product ID" value={product.productId} />
                 <DetailItem label="Category" value={product.category} />
@@ -126,13 +141,14 @@ const ProductDetail = () => {
           </Card>
         </TabsContent>
         
+        {/* History Tab Content */}
         <TabsContent value="history">
-          <Card>
-            <CardHeader>
+          <Card className="border border-gray-100 rounded-xl shadow-sm">
+            <CardHeader className="bg-gray-50 rounded-t-xl">
               <CardTitle>Product History</CardTitle>
               <CardDescription>Transaction history for this product</CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-6">
               {productHistory.length === 0 ? (
                 <p className="text-center text-gray-500 py-4">No history available for this product.</p>
               ) : (
@@ -149,33 +165,37 @@ const ProductDetail = () => {
 
       {/* Edit Product Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="sm:max-w-[600px]">
-          <DialogHeader>
+        <DialogContent className="bg-white rounded-xl border border-gray-200 shadow-xl p-0 overflow-hidden sm:max-w-[600px]">
+          <DialogHeader className="bg-gray-50 px-6 py-4 border-b border-gray-200 rounded-t-xl">
             <DialogTitle>Edit Product</DialogTitle>
             <DialogDescription>
               Update the details for {product.name}
             </DialogDescription>
           </DialogHeader>
-          <EditProductForm 
-            product={product} 
-            onComplete={() => setIsEditDialogOpen(false)} 
-          />
+          <div className="px-6">
+            <EditProductForm 
+              product={product} 
+              onComplete={() => setIsEditDialogOpen(false)} 
+            />
+          </div>
         </DialogContent>
       </Dialog>
 
       {/* Sell Product Dialog */}
       <Dialog open={isSellDialogOpen} onOpenChange={setIsSellDialogOpen}>
-        <DialogContent className="sm:max-w-[600px]">
-          <DialogHeader>
+        <DialogContent className="bg-white rounded-xl border border-gray-200 shadow-xl p-0 overflow-hidden sm:max-w-[600px]">
+          <DialogHeader className="bg-gray-50 px-6 py-4 border-b border-gray-200 rounded-t-xl">
             <DialogTitle>Sell Product</DialogTitle>
             <DialogDescription>
               Mark {product.name} as sold or update quantity
             </DialogDescription>
           </DialogHeader>
-          <SellProductForm 
-            product={product} 
-            onComplete={() => setIsSellDialogOpen(false)} 
-          />
+          <div className="px-6">
+            <SellProductForm 
+              product={product} 
+              onComplete={() => setIsSellDialogOpen(false)} 
+            />
+          </div>
         </DialogContent>
       </Dialog>
     </div>

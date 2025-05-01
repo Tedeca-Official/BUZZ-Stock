@@ -24,7 +24,7 @@ const SellProductForm: React.FC<SellProductFormProps> = ({
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     // Validation
@@ -59,7 +59,7 @@ const SellProductForm: React.FC<SellProductFormProps> = ({
     setIsSubmitting(true);
 
     try {
-      markAsSold(product.id, saleDate, quantityValue);
+      await markAsSold(product.id, saleDate, quantityValue);
 
       toast({
         title: "Product Sold",
@@ -90,6 +90,7 @@ const SellProductForm: React.FC<SellProductFormProps> = ({
           min="1"
           max={product.stock}
           required
+          className="rounded-lg"
         />
         <p className="text-xs text-gray-500 mt-1">
           {product.stock} units available
@@ -105,6 +106,7 @@ const SellProductForm: React.FC<SellProductFormProps> = ({
           onChange={(e) => setSaleDate(e.target.value)}
           max={new Date().toISOString().split("T")[0]}
           required
+          className="rounded-lg"
         />
       </div>
 
@@ -114,10 +116,15 @@ const SellProductForm: React.FC<SellProductFormProps> = ({
           variant="outline"
           onClick={onComplete}
           disabled={isSubmitting}
+          className="rounded-full"
         >
           Cancel
         </Button>
-        <Button type="submit" disabled={isSubmitting} className="bg-savvy-primary">
+        <Button 
+          type="submit" 
+          disabled={isSubmitting} 
+          className="bg-savvy-primary rounded-full"
+        >
           {isSubmitting ? "Processing..." : "Complete Sale"}
         </Button>
       </div>

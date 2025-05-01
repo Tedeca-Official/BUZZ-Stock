@@ -1,5 +1,14 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
-import { getProducts, getProductHistory, saveProducts, saveProductHistory } from "@/utils/localDatabase";
+import { 
+  getProducts, 
+  getProductHistory, 
+  saveProduct, 
+  saveProducts, 
+  saveProductHistory, 
+  saveProductHistoryBatch,
+  deleteProductFromDb,
+  getHistoryForProduct as getHistoryForProductFromDb
+} from "@/utils/localDatabase";
 
 export interface Product {
   id: string;
@@ -26,136 +35,53 @@ export interface ProductHistory {
 interface ProductContextType {
   products: Product[];
   productHistory: ProductHistory[];
-  addProduct: (product: Omit<Product, "id">) => void;
-  updateProduct: (id: string, updates: Partial<Product>) => void;
-  markAsSold: (id: string, saleDate: string, quantity: number) => void;
-  deleteProduct: (id: string) => void;
+  addProduct: (product: Omit<Product, "id">) => Promise<void>;
+  updateProduct: (id: string, updates: Partial<Product>) => Promise<void>;
+  markAsSold: (id: string, saleDate: string, quantity: number) => Promise<void>;
+  deleteProduct: (id: string) => Promise<void>;
   getProductById: (id: string) => Product | undefined;
   getHistoryForProduct: (productId: string) => ProductHistory[];
+  isLoading: boolean;
 }
 
 const ProductContext = createContext<ProductContextType>({
   products: [],
   productHistory: [],
-  addProduct: () => {},
-  updateProduct: () => {},
-  markAsSold: () => {},
-  deleteProduct: () => {},
+  addProduct: async () => {},
+  updateProduct: async () => {},
+  markAsSold: async () => {},
+  deleteProduct: async () => {},
   getProductById: () => undefined,
   getHistoryForProduct: () => [],
+  isLoading: true,
 });
-
-// Sample initial product data
-const initialProducts: Product[] = [
-  {
-    id: "1",
-    productId: "iph13",
-    name: "iPhone 13 Pro",
-    purchaseDate: "2023-01-15",
-    status: "In Stock",
-    stock: 5,
-    price: 999,
-    category: "Mobile Phones",
-  },
-  {
-    id: "2",
-    productId: "sam22",
-    name: "Samsung Galaxy S22",
-    purchaseDate: "2023-02-10",
-    status: "In Stock",
-    stock: 3,
-    price: 899,
-    category: "Mobile Phones",
-  },
-  {
-    id: "3",
-    productId: "mba13",
-    name: "MacBook Air M2",
-    purchaseDate: "2023-01-20",
-    status: "Sold",
-    stock: 0,
-    price: 1299,
-    category: "Laptops",
-    saleDate: "2023-03-15",
-    saleQuantity: 2,
-  },
-  {
-    id: "4",
-    productId: "dxps13",
-    name: "Dell XPS 13",
-    purchaseDate: "2023-03-05",
-    status: "In Stock",
-    stock: 2,
-    price: 1199,
-    category: "Laptops",
-  },
-];
-
-// Sample initial history data
-const initialHistory: ProductHistory[] = [
-  {
-    id: "h1",
-    productId: "1",
-    date: "2023-01-15",
-    type: "purchase",
-    quantity: 5,
-    price: 999,
-  },
-  {
-    id: "h2",
-    productId: "2",
-    date: "2023-02-10",
-    type: "purchase",
-    quantity: 3,
-    price: 899,
-  },
-  {
-    id: "h3",
-    productId: "3",
-    date: "2023-01-20",
-    type: "purchase",
-    quantity: 2,
-    price: 1299,
-  },
-  {
-    id: "h4",
-    productId: "3",
-    date: "2023-03-15",
-    type: "sale",
-    quantity: 2,
-    price: 1349,
-  },
-  {
-    id: "h5",
-    productId: "4",
-    date: "2023-03-05",
-    type: "purchase",
-    quantity: 2,
-    price: 1199,
-  },
-];
 
 export const ProductProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
-  // Load data from localStorage on initial render
   const [products, setProducts] = useState<Product[]>([]);
   const [productHistory, setProductHistory] = useState<ProductHistory[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   
-  // Load data from localStorage on initial render
+  // Load data from Firebase on initial render
   useEffect(() => {
-    setProducts(getProducts());
-    setProductHistory(getProductHistory());
+    const fetchData = async () => {
+      setIsLoading(true);
+      try {
+        const fetchedProducts = await getProducts();
+        const fetchedHistory = await getProductHistory();
+        
+        setProducts(fetchedProducts);
+        setProductHistory(fetchedHistory);
+      } catch (error) {
+        console.error("Error fetching data:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    fetchData();
   }, []);
-  
-  // Save to localStorage whenever data changes
-  useEffect(() => {
-    saveProducts(products);
-  }, [products]);
-  
-  useEffect(() => {
-    saveProductHistory(productHistory);
-  }, [productHistory]);
 
   // Generate a unique ID
   const generateId = () => {
@@ -163,31 +89,41 @@ export const ProductProvider: React.FC<{ children: React.ReactNode }> = ({
   };
 
   // Add new product
-  const addProduct = (product: Omit<Product, "id">) => {
-    const newProduct = {
-      ...product,
-      id: generateId(),
-    };
+  const addProduct = async (product: Omit<Product, "id">) => {
+    try {
+      const newProduct = {
+        ...product,
+        id: generateId(), // This ID will be replaced by Firestore's ID
+      };
 
-    setProducts([...products, newProduct]);
+      const productId = await saveProduct(newProduct as Product);
+      
+      // Update the product with the correct Firestore ID
+      const savedProduct = { ...newProduct, id: productId };
+      setProducts([...products, savedProduct]);
 
-    // Add purchase to history
-    const newHistory: ProductHistory = {
-      id: generateId(),
-      productId: newProduct.id,
-      date: product.purchaseDate,
-      type: "purchase",
-      quantity: product.stock,
-      price: product.price || undefined,
-    };
+      // Add purchase to history
+      const newHistory: ProductHistory = {
+        id: generateId(),
+        productId,
+        date: product.purchaseDate,
+        type: "purchase",
+        quantity: product.stock,
+        price: product.price || undefined,
+      };
 
-    setProductHistory([...productHistory, newHistory]);
+      await saveProductHistory(newHistory);
+      setProductHistory([...productHistory, { ...newHistory, id: productId }]);
+    } catch (error) {
+      console.error("Error adding product:", error);
+      throw error;
+    }
   };
 
   // Update product
-  const updateProduct = (id: string, updates: Partial<Product>) => {
-    setProducts(
-      products.map((product) => {
+  const updateProduct = async (id: string, updates: Partial<Product>) => {
+    try {
+      const updatedProducts = products.map((product) => {
         if (product.id === id) {
           // If stock is being updated, add to history
           if (updates.stock !== undefined && product.stock !== updates.stock) {
@@ -201,51 +137,75 @@ export const ProductProvider: React.FC<{ children: React.ReactNode }> = ({
                 quantity: stockDifference,
                 price: updates.price || product.price || undefined,
               };
-              setProductHistory([...productHistory, newHistory]);
+              
+              // We'll save history at the end
+              saveProductHistory(newHistory).then((historyId) => {
+                setProductHistory([...productHistory, { ...newHistory, id: historyId }]);
+              });
             }
           }
           
-          return { ...product, ...updates };
+          const updatedProduct = { ...product, ...updates };
+          // Save to Firebase
+          saveProduct(updatedProduct);
+          return updatedProduct;
         }
         return product;
-      })
-    );
+      });
+      
+      setProducts(updatedProducts);
+    } catch (error) {
+      console.error("Error updating product:", error);
+      throw error;
+    }
   };
 
   // Mark product as sold
-  const markAsSold = (id: string, saleDate: string, quantity: number) => {
-    const product = products.find((p) => p.id === id);
-    if (!product) return;
+  const markAsSold = async (id: string, saleDate: string, quantity: number) => {
+    try {
+      const product = products.find((p) => p.id === id);
+      if (!product) return;
 
-    // Calculate remaining stock
-    const remainingStock = Math.max(0, product.stock - quantity);
-    const status = remainingStock > 0 ? "In Stock" : "Sold";
+      // Calculate remaining stock
+      const remainingStock = Math.max(0, product.stock - quantity);
+      const status = remainingStock > 0 ? "In Stock" : "Sold";
 
-    // Update product
-    updateProduct(id, {
-      status,
-      stock: remainingStock,
-      saleDate,
-      saleQuantity: quantity,
-    });
+      // Update product
+      await updateProduct(id, {
+        status,
+        stock: remainingStock,
+        saleDate,
+        saleQuantity: quantity,
+      });
 
-    // Add sale to history
-    const newHistory: ProductHistory = {
-      id: generateId(),
-      productId: id,
-      date: saleDate,
-      type: "sale",
-      quantity,
-      price: product.price || undefined,
-    };
+      // Add sale to history
+      const newHistory: ProductHistory = {
+        id: generateId(),
+        productId: id,
+        date: saleDate,
+        type: "sale",
+        quantity,
+        price: product.price || undefined,
+      };
 
-    setProductHistory([...productHistory, newHistory]);
+      const historyId = await saveProductHistory(newHistory);
+      setProductHistory([...productHistory, { ...newHistory, id: historyId }]);
+    } catch (error) {
+      console.error("Error marking product as sold:", error);
+      throw error;
+    }
   };
 
   // Delete product
-  const deleteProduct = (id: string) => {
-    setProducts(products.filter((product) => product.id !== id));
-    // Note: We keep the history for reporting purposes
+  const deleteProduct = async (id: string) => {
+    try {
+      await deleteProductFromDb(id);
+      setProducts(products.filter((product) => product.id !== id));
+      // Note: We keep the history for reporting purposes
+    } catch (error) {
+      console.error("Error deleting product:", error);
+      throw error;
+    }
   };
 
   // Get product by ID
@@ -269,6 +229,7 @@ export const ProductProvider: React.FC<{ children: React.ReactNode }> = ({
         deleteProduct,
         getProductById,
         getHistoryForProduct,
+        isLoading,
       }}
     >
       {children}
