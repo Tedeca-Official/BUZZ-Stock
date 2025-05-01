@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useState } from "react";
+import React, { createContext, useContext, useState, useEffect } from "react";
+import { getProducts, getProductHistory, saveProducts, saveProductHistory } from "@/utils/localDatabase";
 
 export interface Product {
   id: string;
@@ -137,8 +138,24 @@ const initialHistory: ProductHistory[] = [
 export const ProductProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
-  const [products, setProducts] = useState<Product[]>(initialProducts);
-  const [productHistory, setProductHistory] = useState<ProductHistory[]>(initialHistory);
+  // Load data from localStorage on initial render
+  const [products, setProducts] = useState<Product[]>([]);
+  const [productHistory, setProductHistory] = useState<ProductHistory[]>([]);
+  
+  // Load data from localStorage on initial render
+  useEffect(() => {
+    setProducts(getProducts());
+    setProductHistory(getProductHistory());
+  }, []);
+  
+  // Save to localStorage whenever data changes
+  useEffect(() => {
+    saveProducts(products);
+  }, [products]);
+  
+  useEffect(() => {
+    saveProductHistory(productHistory);
+  }, [productHistory]);
 
   // Generate a unique ID
   const generateId = () => {

@@ -62,12 +62,12 @@ const Products = () => {
   return (
     <div className="animate-fade-in">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Products</h1>
+        <h1 className="text-2xl font-bold text-gray-800">Products</h1>
         <div className="flex space-x-2">
           {isAdmin && (
             <Button 
               onClick={() => setIsAddProductOpen(true)} 
-              className="bg-savvy-primary"
+              className="bg-blue-500 hover:bg-blue-600 text-white rounded-md shadow-sm"
             >
               <Plus className="mr-2 h-4 w-4" /> Add Product
             </Button>
@@ -75,7 +75,7 @@ const Products = () => {
         </div>
       </div>
 
-      <div className="bg-white p-4 rounded-md shadow mb-6">
+      <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100 mb-6">
         <div className="flex flex-col md:flex-row justify-between gap-4 mb-4">
           <div className="relative flex-1">
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
@@ -83,19 +83,19 @@ const Products = () => {
               placeholder="Search products..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-8"
+              className="pl-8 border-gray-200 rounded-md"
             />
           </div>
 
           <div className="flex space-x-2">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" className="flex items-center">
+                <Button variant="outline" className="flex items-center border-gray-200 text-gray-700">
                   <Filter className="mr-2 h-4 w-4" />
                   Status
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
+              <DropdownMenuContent align="end" className="bg-white border border-gray-100 shadow-md rounded-md">
                 <DropdownMenuItem onClick={() => setStatusFilter(null)}>
                   All
                 </DropdownMenuItem>
@@ -110,12 +110,12 @@ const Products = () => {
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" className="flex items-center">
+                <Button variant="outline" className="flex items-center border-gray-200 text-gray-700">
                   <Filter className="mr-2 h-4 w-4" />
                   Category
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
+              <DropdownMenuContent align="end" className="bg-white border border-gray-100 shadow-md rounded-md">
                 <DropdownMenuItem onClick={() => setCategoryFilter(null)}>
                   All Categories
                 </DropdownMenuItem>
@@ -136,21 +136,21 @@ const Products = () => {
         <div className="overflow-x-auto">
           <Table>
             <TableHeader>
-              <TableRow>
-                <TableHead>ID</TableHead>
-                <TableHead>Name</TableHead>
-                <TableHead>Category</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Stock</TableHead>
-                <TableHead>Price</TableHead>
-                <TableHead>Purchase Date</TableHead>
+              <TableRow className="bg-gray-50">
+                <TableHead className="text-gray-600 font-medium">ID</TableHead>
+                <TableHead className="text-gray-600 font-medium">Name</TableHead>
+                <TableHead className="text-gray-600 font-medium">Category</TableHead>
+                <TableHead className="text-gray-600 font-medium">Status</TableHead>
+                <TableHead className="text-gray-600 font-medium">Stock</TableHead>
+                <TableHead className="text-gray-600 font-medium">Price</TableHead>
+                <TableHead className="text-gray-600 font-medium">Purchase Date</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredProducts.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="h-24 text-center">
-                    No products found.
+                  <TableCell colSpan={7} className="h-24 text-center text-gray-500">
+                    No products found. Add your first product to get started.
                   </TableCell>
                 </TableRow>
               ) : (
@@ -158,7 +158,7 @@ const Products = () => {
                   <TableRow 
                     key={product.id} 
                     onClick={() => handleRowClick(product.id)}
-                    className="cursor-pointer hover:bg-gray-50"
+                    className="cursor-pointer hover:bg-gray-50 transition-colors"
                   >
                     <TableCell className="font-medium">{product.productId}</TableCell>
                     <TableCell>{product.name}</TableCell>
@@ -181,14 +181,16 @@ const Products = () => {
 
       {/* Add Product Dialog */}
       <Dialog open={isAddProductOpen} onOpenChange={setIsAddProductOpen}>
-        <DialogContent className="sm:max-w-[600px]">
-          <DialogHeader>
-            <DialogTitle>Add New Product</DialogTitle>
-            <DialogDescription>
+        <DialogContent className="bg-white rounded-xl border border-gray-200 shadow-xl p-0 overflow-hidden sm:max-w-[600px]">
+          <DialogHeader className="bg-gray-50 px-6 py-4 border-b border-gray-200">
+            <DialogTitle className="text-xl font-semibold text-gray-800">Add New Product</DialogTitle>
+            <DialogDescription className="text-gray-600">
               Enter the details for the new product.
             </DialogDescription>
           </DialogHeader>
-          <AddProductForm onComplete={() => setIsAddProductOpen(false)} />
+          <div className="px-6">
+            <AddProductForm onComplete={() => setIsAddProductOpen(false)} />
+          </div>
         </DialogContent>
       </Dialog>
     </div>
