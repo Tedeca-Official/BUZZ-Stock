@@ -24,7 +24,13 @@ const SaleFormSchema = z.object({
       message: "Quantity must be greater than zero",
     }),
   saleDate: z.string().min(1, "Sale date is required"),
-  saleNotes: z.string().optional(),
+  salePrice: z.string()
+    .refine((val) => !isNaN(parseFloat(val)), {
+      message: "Sale price must be a number",
+    })
+    .refine((val) => parseFloat(val) > 0, {
+      message: "Sale price must be greater than zero",
+    }),
 });
 
 const SellProductForm: React.FC<SellProductFormProps> = ({
@@ -41,12 +47,13 @@ const SellProductForm: React.FC<SellProductFormProps> = ({
     defaultValues: {
       quantity: "1",
       saleDate: new Date().toISOString().split("T")[0],
-      saleNotes: "",
+      salePrice: product.price ? product.price.toString() : "",
     },
   });
 
   const handleSubmit = async (values: z.infer<typeof SaleFormSchema>) => {
     const quantityValue = parseInt(values.quantity, 10);
+    const salePriceValue = parseFloat(values.salePrice);
     
     // Additional validation for quantity vs stock
     if (quantityValue > product.stock) {
@@ -61,11 +68,11 @@ const SellProductForm: React.FC<SellProductFormProps> = ({
     setIsSubmitting(true);
 
     try {
-      await markAsSold(product.id, values.saleDate, quantityValue);
+      await markAsSold(product.id, values.saleDate, quantityValue, salePriceValue);
 
       toast({
         title: "Product Sold",
-        description: `${quantityValue} units of ${product.name} marked as sold.`,
+        description: `${quantityValue} units of ${product.name} marked as sold for $${salePriceValue.toFixed(2)}.`,
       });
 
       onComplete();
@@ -131,15 +138,18 @@ const SellProductForm: React.FC<SellProductFormProps> = ({
 
         <FormField
           control={form.control}
-          name="saleNotes"
+          name="salePrice"
           render={({ field }) => (
             <FormItem>
               <FormLabel className="font-medium">
-                Sale Notes <span className="text-red-500">*</span>
+                Sale Price <span className="text-red-500">*</span>
               </FormLabel>
               <FormControl>
                 <Input
-                  placeholder="Enter sale notes (required)"
+                  type="number"
+                  step="0.01"
+                  min="0.01"
+                  placeholder="Enter sale price"
                   {...field}
                   className="rounded-lg"
                 />

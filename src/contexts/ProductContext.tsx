@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { 
   getProducts, 
@@ -21,6 +22,7 @@ export interface Product {
   category: string;
   saleDate?: string;
   saleQuantity?: number;
+  salePrice?: number;
 }
 
 export interface ProductHistory {
@@ -37,7 +39,7 @@ interface ProductContextType {
   productHistory: ProductHistory[];
   addProduct: (product: Omit<Product, "id">) => Promise<void>;
   updateProduct: (id: string, updates: Partial<Product>) => Promise<void>;
-  markAsSold: (id: string, saleDate: string, quantity: number) => Promise<void>;
+  markAsSold: (id: string, saleDate: string, quantity: number, salePrice?: number) => Promise<void>;
   deleteProduct: (id: string) => Promise<void>;
   getProductById: (id: string) => Product | undefined;
   getHistoryForProduct: (productId: string) => ProductHistory[];
@@ -161,7 +163,7 @@ export const ProductProvider: React.FC<{ children: React.ReactNode }> = ({
   };
 
   // Mark product as sold
-  const markAsSold = async (id: string, saleDate: string, quantity: number) => {
+  const markAsSold = async (id: string, saleDate: string, quantity: number, salePrice?: number) => {
     try {
       const product = products.find((p) => p.id === id);
       if (!product) return;
@@ -176,6 +178,7 @@ export const ProductProvider: React.FC<{ children: React.ReactNode }> = ({
         stock: remainingStock,
         saleDate,
         saleQuantity: quantity,
+        salePrice: salePrice || product.price || undefined,
       });
 
       // Add sale to history
@@ -185,7 +188,7 @@ export const ProductProvider: React.FC<{ children: React.ReactNode }> = ({
         date: saleDate,
         type: "sale",
         quantity,
-        price: product.price || undefined,
+        price: salePrice || product.price || undefined,
       };
 
       const historyId = await saveProductHistory(newHistory);
