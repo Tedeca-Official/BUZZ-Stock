@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { DollarSign } from "lucide-react";
 
 const Inventory = () => {
   const { products } = useProducts();
@@ -88,13 +89,14 @@ const Inventory = () => {
                   <TableHead>Name</TableHead>
                   <TableHead>Category</TableHead>
                   <TableHead>Stock</TableHead>
+                  <TableHead>Price</TableHead>
                   <TableHead>Status</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredProducts.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center py-8 text-gray-500">
+                    <TableCell colSpan={6} className="text-center py-8 text-gray-500">
                       No products in inventory.
                     </TableCell>
                   </TableRow>
@@ -105,6 +107,14 @@ const Inventory = () => {
                       <TableCell>{product.name}</TableCell>
                       <TableCell>{product.category}</TableCell>
                       <TableCell>{product.stock}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center">
+                          <div className="bg-green-100 text-green-800 px-2 py-1 rounded-md flex items-center">
+                            <DollarSign className="h-3.5 w-3.5 mr-1" />
+                            {product.price ? product.price.toFixed(2) : '0.00'}
+                          </div>
+                        </div>
+                      </TableCell>
                       <TableCell>
                         {product.stock <= 2 ? (
                           <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200">Low Stock</Badge>
