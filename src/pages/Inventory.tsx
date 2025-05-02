@@ -5,11 +5,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { DollarSign } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { DollarSign, ShoppingCart } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import SellProductForm from "@/components/products/SellProductForm";
 
 const Inventory = () => {
   const { products } = useProducts();
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [selectedProductForSale, setSelectedProductForSale] = useState<string | null>(null);
 
   // Calculate inventory stats
   const totalProducts = products.length;
@@ -21,12 +25,22 @@ const Inventory = () => {
   // Get unique categories
   const categories = Array.from(new Set(products.map((p) => p.category)));
 
-  // Filter products by category and only show in-stock items
+  // Filter products by category
   const filteredProducts = products.filter(
     (product) =>
-      product.status === "In Stock" && 
       (selectedCategory === null || product.category === selectedCategory)
   );
+
+  // Find the selected product for sale
+  const productForSale = products.find(p => p.id === selectedProductForSale);
+
+  const handleSale = (productId: string) => {
+    setSelectedProductForSale(productId);
+  };
+
+  const closeSaleDialog = () => {
+    setSelectedProductForSale(null);
+  };
 
   return (
     <div className="animate-fade-in">
@@ -91,12 +105,13 @@ const Inventory = () => {
                   <TableHead>Stock</TableHead>
                   <TableHead>Price</TableHead>
                   <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredProducts.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center py-8 text-gray-500">
+                    <TableCell colSpan={7} className="text-center py-8 text-gray-500">
                       No products in inventory.
                     </TableCell>
                   </TableRow>
@@ -116,10 +131,27 @@ const Inventory = () => {
                         </div>
                       </TableCell>
                       <TableCell>
-                        {product.stock <= 2 ? (
+                        {product.status === "Sold" && product.stock === 0 ? (
+                          <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200">Sold Out</Badge>
+                        ) : product.status === "Sold" && product.stock > 0 ? (
+                          <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">Partially Sold</Badge>
+                        ) : product.stock <= 2 ? (
                           <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200">Low Stock</Badge>
                         ) : (
                           <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">In Stock</Badge>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {product.stock > 0 && (
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            onClick={() => handleSale(product.id)}
+                            className="bg-savvy-primary text-white hover:bg-savvy-primary/90"
+                          >
+                            <ShoppingCart className="h-4 w-4 mr-1" />
+                            Sell
+                          </Button>
                         )}
                       </TableCell>
                     </TableRow>
@@ -130,6 +162,21 @@ const Inventory = () => {
           </div>
         </CardContent>
       </Card>
+
+      {/* Sell Product Dialog */}
+      <Dialog open={!!selectedProductForSale} onOpenChange={(open) => !open && closeSaleDialog()}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Mark Product as Sold</DialogTitle>
+          </DialogHeader>
+          {productForSale && (
+            <SellProductForm 
+              product={productForSale} 
+              onComplete={closeSaleDialog} 
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
