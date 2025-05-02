@@ -3,13 +3,29 @@ import React, { useState } from "react";
 import { useProducts, Product } from "@/contexts/ProductContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import * as z from "zod";
 
 interface SellProductFormProps {
   product: Product;
   onComplete: () => void;
 }
+
+// Create a schema for form validation
+const SaleFormSchema = z.object({
+  quantity: z.string()
+    .refine((val) => !isNaN(parseInt(val)), {
+      message: "Quantity must be a number",
+    })
+    .refine((val) => parseInt(val) > 0, {
+      message: "Quantity must be greater than zero",
+    }),
+  saleDate: z.string().min(1, "Sale date is required"),
+  saleNotes: z.string().optional(),
+});
 
 const SellProductForm: React.FC<SellProductFormProps> = ({
   product,
@@ -17,36 +33,22 @@ const SellProductForm: React.FC<SellProductFormProps> = ({
 }) => {
   const { markAsSold } = useProducts();
   const { toast } = useToast();
-
-  const [quantity, setQuantity] = useState("1");
-  const [saleDate, setSaleDate] = useState(
-    new Date().toISOString().split("T")[0]
-  );
   const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // Initialize the form with default values
+  const form = useForm<z.infer<typeof SaleFormSchema>>({
+    resolver: zodResolver(SaleFormSchema),
+    defaultValues: {
+      quantity: "1",
+      saleDate: new Date().toISOString().split("T")[0],
+      saleNotes: "",
+    },
+  });
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    // Validation
-    if (!saleDate || !quantity) {
-      toast({
-        title: "Missing Fields",
-        description: "Please fill in all required fields.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    const quantityValue = parseInt(quantity, 10);
-    if (quantityValue <= 0) {
-      toast({
-        title: "Invalid Quantity",
-        description: "Quantity must be greater than zero.",
-        variant: "destructive",
-      });
-      return;
-    }
-
+  const handleSubmit = async (values: z.infer<typeof SaleFormSchema>) => {
+    const quantityValue = parseInt(values.quantity, 10);
+    
+    // Additional validation for quantity vs stock
     if (quantityValue > product.stock) {
       toast({
         title: "Not Enough Stock",
@@ -59,7 +61,7 @@ const SellProductForm: React.FC<SellProductFormProps> = ({
     setIsSubmitting(true);
 
     try {
-      await markAsSold(product.id, saleDate, quantityValue);
+      await markAsSold(product.id, values.saleDate, quantityValue);
 
       toast({
         title: "Product Sold",
@@ -79,56 +81,94 @@ const SellProductForm: React.FC<SellProductFormProps> = ({
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6 py-4">
-      <div className="space-y-2">
-        <Label htmlFor="quantity">Quantity to Sell *</Label>
-        <Input
-          id="quantity"
-          type="number"
-          value={quantity}
-          onChange={(e) => setQuantity(e.target.value)}
-          min="1"
-          max={product.stock}
-          required
-          className="rounded-lg"
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6 py-4">
+        <FormField
+          control={form.control}
+          name="quantity"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel className="font-medium">
+                Quantity to Sell <span className="text-red-500">*</span>
+              </FormLabel>
+              <FormControl>
+                <Input
+                  type="number"
+                  min="1"
+                  max={product.stock}
+                  {...field}
+                  className="rounded-lg"
+                />
+              </FormControl>
+              <p className="text-xs text-gray-500 mt-1">
+                {product.stock} units available
+              </p>
+              <FormMessage />
+            </FormItem>
+          )}
         />
-        <p className="text-xs text-gray-500 mt-1">
-          {product.stock} units available
-        </p>
-      </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="saleDate">Sale Date *</Label>
-        <Input
-          id="saleDate"
-          type="date"
-          value={saleDate}
-          onChange={(e) => setSaleDate(e.target.value)}
-          max={new Date().toISOString().split("T")[0]}
-          required
-          className="rounded-lg"
+        <FormField
+          control={form.control}
+          name="saleDate"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel className="font-medium">
+                Sale Date <span className="text-red-500">*</span>
+              </FormLabel>
+              <FormControl>
+                <Input
+                  type="date"
+                  max={new Date().toISOString().split("T")[0]}
+                  {...field}
+                  className="rounded-lg"
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
         />
-      </div>
 
-      <div className="flex justify-end space-x-2 pt-4">
-        <Button
-          type="button"
-          variant="outline"
-          onClick={onComplete}
-          disabled={isSubmitting}
-          className="rounded-full"
-        >
-          Cancel
-        </Button>
-        <Button 
-          type="submit" 
-          disabled={isSubmitting} 
-          className="bg-savvy-primary rounded-full"
-        >
-          {isSubmitting ? "Processing..." : "Complete Sale"}
-        </Button>
-      </div>
-    </form>
+        <FormField
+          control={form.control}
+          name="saleNotes"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel className="font-medium">
+                Sale Notes <span className="text-red-500">*</span>
+              </FormLabel>
+              <FormControl>
+                <Input
+                  placeholder="Enter sale notes (required)"
+                  {...field}
+                  className="rounded-lg"
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <div className="flex justify-end space-x-2 pt-4">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={onComplete}
+            disabled={isSubmitting}
+            className="rounded-full"
+          >
+            Cancel
+          </Button>
+          <Button 
+            type="submit" 
+            disabled={isSubmitting} 
+            className="bg-savvy-primary rounded-full"
+          >
+            {isSubmitting ? "Processing..." : "Complete Sale"}
+          </Button>
+        </div>
+      </form>
+    </Form>
   );
 };
 
