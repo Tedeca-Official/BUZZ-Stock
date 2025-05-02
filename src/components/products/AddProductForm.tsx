@@ -62,8 +62,17 @@ const AddProductForm: React.FC<AddProductFormProps> = ({ onComplete }) => {
         description: `${name} has been added to inventory.`,
       });
       
+      // Reset form
+      setProductId("");
+      setName("");
+      setCategory("");
+      setPurchaseDate(new Date().toISOString().split("T")[0]);
+      setStock("1");
+      setPrice("");
+      
       onComplete();
     } catch (error) {
+      console.error("Error adding product:", error);
       toast({
         title: "Error",
         description: "Failed to add product. Please try again.",

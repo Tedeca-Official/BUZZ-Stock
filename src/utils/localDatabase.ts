@@ -1,118 +1,133 @@
 
 /**
- * Firebase Firestore database for product inventory
+ * Local storage database for product inventory
  */
 
 import { Product, ProductHistory } from "@/contexts/ProductContext";
-import { db } from "./firebase";
-import { 
-  collection, 
-  getDocs, 
-  addDoc, 
-  doc, 
-  updateDoc, 
-  deleteDoc, 
-  query, 
-  where,
-  setDoc
-} from "firebase/firestore";
 
-// Collection names
-const PRODUCTS_COLLECTION = "products";
-const HISTORY_COLLECTION = "product_history";
+// Local storage keys
+const PRODUCTS_KEY = "stocksavvy_products";
+const HISTORY_KEY = "stocksavvy_product_history";
 
-// Get data from Firestore
-export const getProducts = async (): Promise<Product[]> => {
+// Helper function to get data from local storage
+const getFromLocalStorage = <T>(key: string): T[] => {
   try {
-    const productsCollection = collection(db, PRODUCTS_COLLECTION);
-    const snapshot = await getDocs(productsCollection);
-    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Product));
+    const data = localStorage.getItem(key);
+    return data ? JSON.parse(data) : [];
   } catch (error) {
-    console.error("Error retrieving products from Firestore:", error);
+    console.error(`Error retrieving from local storage (${key}):`, error);
     return [];
   }
+};
+
+// Helper function to save data to local storage
+const saveToLocalStorage = <T>(key: string, data: T[]): void => {
+  try {
+    localStorage.setItem(key, JSON.stringify(data));
+  } catch (error) {
+    console.error(`Error saving to local storage (${key}):`, error);
+  }
+};
+
+// Get data from local storage
+export const getProducts = async (): Promise<Product[]> => {
+  return getFromLocalStorage<Product>(PRODUCTS_KEY);
 };
 
 export const getProductHistory = async (): Promise<ProductHistory[]> => {
-  try {
-    const historyCollection = collection(db, HISTORY_COLLECTION);
-    const snapshot = await getDocs(historyCollection);
-    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as ProductHistory));
-  } catch (error) {
-    console.error("Error retrieving product history from Firestore:", error);
-    return [];
-  }
+  return getFromLocalStorage<ProductHistory>(HISTORY_KEY);
 };
 
-// Save data to Firestore
+// Save data to local storage
 export const saveProduct = async (product: Product): Promise<string> => {
   try {
+    const products = getFromLocalStorage<Product>(PRODUCTS_KEY);
+    
     if (product.id) {
       // Update existing product
-      const productRef = doc(db, PRODUCTS_COLLECTION, product.id);
-      await updateDoc(productRef, { ...product });
-      return product.id;
+      const index = products.findIndex(p => p.id === product.id);
+      if (index !== -1) {
+        products[index] = { ...product };
+      }
     } else {
-      // Add new product
-      const newProduct = { ...product };
-      delete newProduct.id; // Remove id field for new products
-      const docRef = await addDoc(collection(db, PRODUCTS_COLLECTION), newProduct);
-      return docRef.id;
+      // Add new product with generated ID
+      product.id = Date.now().toString(36) + Math.random().toString(36).substring(2);
+      products.push(product);
     }
+    
+    saveToLocalStorage(PRODUCTS_KEY, products);
+    return product.id;
   } catch (error) {
-    console.error("Error saving product to Firestore:", error);
+    console.error("Error saving product to local storage:", error);
     throw error;
   }
 };
 
 export const saveProducts = async (products: Product[]): Promise<void> => {
   try {
-    // This is a batch operation example
-    for (const product of products) {
-      await saveProduct(product);
-    }
+    saveToLocalStorage(PRODUCTS_KEY, products);
   } catch (error) {
-    console.error("Error saving products to Firestore:", error);
+    console.error("Error saving products to local storage:", error);
   }
 };
 
 export const saveProductHistory = async (history: ProductHistory): Promise<string> => {
   try {
+    const historyItems = getFromLocalStorage<ProductHistory>(HISTORY_KEY);
+    
     if (history.id) {
       // Update existing history
-      const historyRef = doc(db, HISTORY_COLLECTION, history.id);
-      await updateDoc(historyRef, { ...history });
-      return history.id;
+      const index = historyItems.findIndex(h => h.id === history.id);
+      if (index !== -1) {
+        historyItems[index] = { ...history };
+      }
     } else {
-      // Add new history entry
-      const newHistory = { ...history };
-      delete newHistory.id; // Remove id field for new entries
-      const docRef = await addDoc(collection(db, HISTORY_COLLECTION), newHistory);
-      return docRef.id;
+      // Add new history with generated ID
+      history.id = Date.now().toString(36) + Math.random().toString(36).substring(2);
+      historyItems.push(history);
     }
+    
+    saveToLocalStorage(HISTORY_KEY, historyItems);
+    return history.id;
   } catch (error) {
-    console.error("Error saving history to Firestore:", error);
+    console.error("Error saving history to local storage:", error);
     throw error;
   }
 };
 
 export const saveProductHistoryBatch = async (historyItems: ProductHistory[]): Promise<void> => {
   try {
+    const existingItems = getFromLocalStorage<ProductHistory>(HISTORY_KEY);
+    const newItems = [...existingItems];
+    
     for (const item of historyItems) {
-      await saveProductHistory(item);
+      if (item.id) {
+        const index = newItems.findIndex(h => h.id === item.id);
+        if (index !== -1) {
+          newItems[index] = { ...item };
+        } else {
+          newItems.push(item);
+        }
+      } else {
+        item.id = Date.now().toString(36) + Math.random().toString(36).substring(2);
+        newItems.push(item);
+      }
     }
+    
+    saveToLocalStorage(HISTORY_KEY, newItems);
   } catch (error) {
-    console.error("Error saving product history to Firestore:", error);
+    console.error("Error saving product history to local storage:", error);
   }
 };
 
 // Delete product
 export const deleteProductFromDb = async (id: string): Promise<void> => {
   try {
-    const productRef = doc(db, PRODUCTS_COLLECTION, id);
-    await deleteDoc(productRef);
+    const products = getFromLocalStorage<Product>(PRODUCTS_KEY);
+    const updatedProducts = products.filter(product => product.id !== id);
+    saveToLocalStorage(PRODUCTS_KEY, updatedProducts);
   } catch (error) {
-    console.error("Error deleting product from Firestore:", error);
+    console.error("Error deleting product from local storage:", error);
     throw error;
   }
 };
@@ -120,19 +135,21 @@ export const deleteProductFromDb = async (id: string): Promise<void> => {
 // Get history for a specific product
 export const getHistoryForProduct = async (productId: string): Promise<ProductHistory[]> => {
   try {
-    const historyCollection = collection(db, HISTORY_COLLECTION);
-    const q = query(historyCollection, where("productId", "==", productId));
-    const snapshot = await getDocs(q);
-    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as ProductHistory));
+    const historyItems = getFromLocalStorage<ProductHistory>(HISTORY_KEY);
+    return historyItems.filter(item => item.productId === productId);
   } catch (error) {
-    console.error("Error retrieving product history from Firestore:", error);
+    console.error("Error retrieving product history from local storage:", error);
     return [];
   }
 };
 
 // Clear all data (for testing/reset)
 export const clearDatabase = async (): Promise<void> => {
-  // This function is left as a placeholder
-  // In a real app, you would implement proper clearing logic
-  console.warn("clearDatabase not implemented for Firestore");
+  try {
+    localStorage.removeItem(PRODUCTS_KEY);
+    localStorage.removeItem(HISTORY_KEY);
+    console.log("Local storage database cleared");
+  } catch (error) {
+    console.error("Error clearing local storage:", error);
+  }
 };
